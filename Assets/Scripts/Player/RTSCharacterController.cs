@@ -8,49 +8,48 @@ public class RTSCharecterController : MonoBehaviour
     private bool isActive = false;
     private NavMeshAgent agent;
 
+    // Variables for double-click detection
+    private float lastClickTime = 0f;
+    private float doubleClickTimeThreshold = 0.3f;
+
+    // Movement speed variables
+    private float normalSpeed = 5f;
+    private float sprintSpeed = 10f;
+
     void Start()
     {
-        // Get reference to NavMeshAgent component
         agent = GetComponent<NavMeshAgent>();
-
-        // Store the original material of the object
         originalMaterial = GetComponent<Renderer>().material;
     }
 
     void Update()
     {
-        // Check for mouse click
-        if (Input.GetMouseButtonDown(0))
+        if (Input.GetMouseButtonDown(1))
         {
-            // Create a ray from the mouse position
             Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
             RaycastHit hit;
-
-            // Check if the ray hits an object with the Player tag
             if (Physics.Raycast(ray, out hit) && hit.collider.CompareTag("Player"))
             {
-                // Toggle the object's active state
                 ToggleActiveState();
             }
-            // If the object is active
             else if (isActive)
             {
-                // Use NavMesh to determine the destination
-                if (NavMesh.SamplePosition(hit.point, out NavMeshHit navHit, 100f, NavMesh.AllAreas))
+                if (Time.time - lastClickTime <= doubleClickTimeThreshold)
                 {
-                    // Set the destination for the NavMeshAgent
-                    SetDestination(navHit.position);
+                    IncreaseMoveSpeed();
                 }
+                else
+                {
+                    MoveToDestination(hit.point);
+                }
+                lastClickTime = Time.time;
             }
         }
     }
 
-    // Method to toggle the active state of the player object
     private void ToggleActiveState()
     {
         isActive = !isActive;
-
-        // Change the object's material based on its active state
         if (isActive)
         {
             GetComponent<Renderer>().material = activeMaterial;
@@ -61,16 +60,22 @@ public class RTSCharecterController : MonoBehaviour
         }
     }
 
-    // Method to set destination for the NavMeshAgent
-    private void SetDestination(Vector3 destination)
+    private void MoveToDestination(Vector3 destination)
     {
-        // Set the destination for the NavMeshAgent
+        agent.speed = normalSpeed;
         agent.SetDestination(destination);
     }
 
-    // Method to handle collision with objects
-    private void OnTriggerEnter(Collider other)
+    private void IncreaseMoveSpeed()
     {
-        Debug.Log("Collided with: " + other.tag);
+        switch (agent.speed)
+        {
+            case 5f:
+                agent.speed = sprintSpeed;
+                break;
+            case 10f:
+                agent.speed = normalSpeed;
+                break;
+        }
     }
 }

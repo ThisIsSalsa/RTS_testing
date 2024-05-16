@@ -25,7 +25,7 @@ public class QuestNPC : MonoBehaviour
     {
         if (!questCompleted && questMarker != null)
         {
-            questMarker.transform.Rotate(Vector3.up * Time.deltaTime * 50f); // Make the marker spin
+            questMarker.transform.Rotate(Vector3.forward * Time.deltaTime * 50f); // Make the marker spin in the x-axis
         }
     }
 
@@ -71,4 +71,5 @@ public class QuestNPC : MonoBehaviour
             questMarker.SetActive(isActive);
         }
     }
+    
 }
