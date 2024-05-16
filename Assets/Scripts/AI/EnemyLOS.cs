@@ -1,7 +1,6 @@
 using UnityEngine;
-using UnityEngine.Events;
+using UnityEngine.SceneManagement;
 using System.Collections;
-
 public class EnemyLOS : MonoBehaviour
 {
     public float rotationSpeed = 5f;
@@ -13,8 +12,6 @@ public class EnemyLOS : MonoBehaviour
     private new Renderer renderer;
     private bool playerInLOS = false;
     private bool activated = false;
-
-    public UnityEvent onActivateMesh;
 
     void Start()
     {
@@ -33,7 +30,8 @@ public class EnemyLOS : MonoBehaviour
                 renderer.material = alertMaterial;
                 renderer.enabled = true;
                 activated = true;
-                onActivateMesh.Invoke();
+                // Reset the scene when the player is seen
+                SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
             }
         }
     }
@@ -69,7 +67,6 @@ public class EnemyLOS : MonoBehaviour
         {
             renderer.enabled = true;
             activated = true;
-            onActivateMesh.Invoke();
         }
         else
         {

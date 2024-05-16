@@ -16,9 +16,12 @@ public class PickUp : MonoBehaviour
     public float frequency = 1f;
     private Vector3 startPos;
 
+    public AudioSource audioSource; // Reference to the AudioSource component
+
     private void Start()
     {
         startPos = transform.position;
+        audioSource = GetComponent<AudioSource>(); // Get the AudioSource component
     }
 
     private void OnCollisionEnter(Collision collision)
@@ -26,13 +29,13 @@ public class PickUp : MonoBehaviour
         if (collision.gameObject.CompareTag("Player"))
         {
             AddToInventory(collision.gameObject);
+            PlayPickUpSound(); // Play the pickup sound
             Destroy(gameObject);
         }
     }
 
     private void AddToInventory(GameObject player)
     {
-        // Assuming the player has an Inventory script attached
         Inventory inventory = player.GetComponent<Inventory>();
         if (inventory != null)
         {
@@ -42,6 +45,14 @@ public class PickUp : MonoBehaviour
         else
         {
             Debug.LogWarning("Player does not have an Inventory script attached.");
+        }
+    }
+
+    private void PlayPickUpSound()
+    {
+        if (audioSource != null && audioSource.clip != null)
+        {
+            audioSource.Play(); // Play the assigned audio clip
         }
     }
 

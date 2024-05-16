@@ -7,15 +7,11 @@ public class Dash : MonoBehaviour
     private NavMeshAgent agent;
     private bool isAttacking = false;
     
+public bool IsDashing { get; private set; }
 
     void Start()
     {
         agent = GetComponent<NavMeshAgent>();
-    }
-
-    void Update()
-    {
-        // Code to handle dash movement
     }
 
     public void ActivateDash()
@@ -44,6 +40,9 @@ public class Dash : MonoBehaviour
 
                         // Call the HandleDashHit method of the collided enemy
                         hit.collider.GetComponent<Enemy>().HandleDashHit();
+
+                        // Set the IsDashing flag to true
+                        IsDashing = true;
 
                         break;
                     }

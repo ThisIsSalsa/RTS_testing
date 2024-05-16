@@ -1,14 +1,16 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
-
+using System.Collections;
 public class Throw : MonoBehaviour
 {
-    public GameObject ammoPrefab; // Reference to the prefab of the object you want to throw
-    public Transform spawnPoint; // Reference to the spawn point where the object will be instantiated
+    public GameObject ammoPrefab;
+    public Transform spawnPoint;
+    private bool throwActivated = false;
+    private Inventory inventory;
 
-    private bool throwActivated = false; // Flag to control when to throw
+    void Start()
+    {
+        inventory = GetComponent<Inventory>(); // Get the Inventory component attached to the same GameObject
+    }
 
     void Update()
     {
@@ -16,11 +18,11 @@ public class Throw : MonoBehaviour
         {
             RotateCharacterTowardsMouse();
 
-            if (Input.GetMouseButtonDown(0)) // Check if the throw is activated and left mouse button is clicked
+            if (Input.GetMouseButtonDown(0))
             {
                 ThrowObject();
             }
-            else if (Input.GetKeyDown(KeyCode.Space)) // Check if space bar is pressed to cancel throw
+            else if (Input.GetKeyDown(KeyCode.Space))
             {
                 throwActivated = false;
             }
@@ -50,35 +52,44 @@ public class Throw : MonoBehaviour
         if (Physics.Raycast(ray, out hit))
         {
             Vector3 targetPosition = hit.point;
-            targetPosition.y = transform.position.y; // Keep the same y position as the character
+            targetPosition.y = transform.position.y;
             transform.LookAt(targetPosition);
         }
     }
 
     void ThrowObject()
     {
-        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-        RaycastHit hit;
-
-        if (Physics.Raycast(ray, out hit))
+        if (inventory.HasItem("Ammo")) // Check if there's ammo in the inventory
         {
-            Vector3 direction = hit.point - spawnPoint.position; // Calculate direction towards the hit point
-            direction.Normalize(); // Normalize the direction vector
+            // Remove one unit of ammo from the inventory
+            inventory.RemoveItem("Ammo", 1);
 
-            GameObject ammoInstance = Instantiate(ammoPrefab, spawnPoint.position, Quaternion.identity);
-            Rigidbody rb = ammoInstance.GetComponent<Rigidbody>();
+            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            RaycastHit hit;
 
-            if (rb != null)
+            if (Physics.Raycast(ray, out hit))
             {
-                // Apply force towards the hit point
-                rb.AddForce(direction * 60f, ForceMode.Impulse);
+                Vector3 direction = hit.point - spawnPoint.position;
+                direction.Normalize();
+
+                GameObject ammoInstance = Instantiate(ammoPrefab, spawnPoint.position, Quaternion.identity);
+                Rigidbody rb = ammoInstance.GetComponent<Rigidbody>();
+
+                if (rb != null)
+                {
+                    rb.AddForce(direction * 60f, ForceMode.Impulse);
+                }
+                else
+                {
+                    Debug.LogError("Rigidbody component not found on the thrown object.");
+                }
             }
-            else
-            {
-                Debug.LogError("Rigidbody component not found on the thrown object.");
-            }
+
+            throwActivated = false;
         }
-
-        throwActivated = false; // Reset the flag after throwing
+        else
+        {
+            Debug.Log("Out of ammo!"); // Output a message if no ammo is available
+        }
     }
 }

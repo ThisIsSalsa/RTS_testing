@@ -1,59 +1,52 @@
 using UnityEngine;
 using UnityEngine.AI;
 using System.Collections;
-using System.Collections.Generic;
 
 public class Enemy : MonoBehaviour
 {
     public float rotationSpeed = 30f;
     public float rotationAngle = 45f;
     public float selfDestructDelay = 1.5f;
-    public bool doesPath = false;
-    public List<Transform> waypoints;
-    public ParticleSystem deathParticleSystemPrefab; 
+    public ParticleSystem deathParticleSystemPrefab;
     public AudioSource deathAudioSource;
 
-    private NavMeshAgent agent;
+    public bool doesPath = false;
+    public Transform[] waypoints;
+
+    private Quaternion initialRotation;
     private Transform player;
     private EnemyLOS enemyLOS;
-    private Vector3 initialPosition;
-    private Quaternion initialRotation; // Added
+    private NavMeshAgent agent;
     private int currentWaypointIndex = 0;
-    private Coroutine currentState;
 
     void Start()
     {
-        agent = GetComponent<NavMeshAgent>();
-        enemyLOS = GetComponentInChildren<EnemyLOS>();
+        initialRotation = transform.rotation;
         player = GameObject.FindGameObjectWithTag("Player").transform;
-        initialPosition = transform.position; // Store initial position
-        initialRotation = transform.rotation; // Store initial rotation
+        enemyLOS = GetComponentInChildren<EnemyLOS>();
+        agent = GetComponent<NavMeshAgent>();
 
-        currentState = StartCoroutine(FSM());
+        if (doesPath && waypoints.Length > 0)
+        {
+            StartCoroutine(Patrol());
+        }
+        else
+        {
+            StartCoroutine(Idle());
+        }
     }
 
-    IEnumerator FSM()
+    IEnumerator Idle()
     {
         while (true)
         {
-            if (enemyLOS.IsPlayerSeen())
-            {
-                currentState = StartCoroutine(Chasing());
-            }
-            else if (doesPath && waypoints != null && waypoints.Count > 0)
-            {
-                currentState = StartCoroutine(Patrolling());
-            }
-            else
-            {
-                currentState = StartCoroutine(Idling());
-            }
-
+            float currentRotation = Mathf.Sin(Time.time * rotationSpeed) * rotationAngle;
+            transform.rotation = initialRotation * Quaternion.Euler(0f, currentRotation, 0f);
             yield return null;
         }
     }
 
-    IEnumerator Patrolling()
+    IEnumerator Patrol()
     {
         while (true)
         {
@@ -61,11 +54,12 @@ public class Enemy : MonoBehaviour
 
             if (agent.remainingDistance <= agent.stoppingDistance && !agent.pathPending)
             {
-                currentWaypointIndex = (currentWaypointIndex + 1) % waypoints.Count;
+                currentWaypointIndex = (currentWaypointIndex + 1) % waypoints.Length;
             }
 
             if (enemyLOS.IsPlayerSeen())
             {
+                StartCoroutine(AttackPlayer());
                 yield break;
             }
 
@@ -73,51 +67,34 @@ public class Enemy : MonoBehaviour
         }
     }
 
-    IEnumerator Chasing()
+    IEnumerator AttackPlayer()
     {
         while (true)
         {
-            agent.SetDestination(player.position);
-
             if (!enemyLOS.IsPlayerSeen())
             {
-                agent.SetDestination(initialPosition);
-                yield return StartCoroutine(ReturnToInitialPosition());
-            }
-
-            yield return null;
-        }
-    }
-
-    IEnumerator ReturnToInitialPosition()
-    {
-        while (Vector3.Distance(transform.position, initialPosition) > agent.stoppingDistance)
-        {
-            yield return null;
-        }
-    }
-
-    IEnumerator Idling()
-    {
-        float idleTimer = 0f;
-
-        while (idleTimer < 3f)
-        {
-            // Calculate the rotation angle based on sine function
-            float currentRotation = Mathf.Sin(Time.time * rotationSpeed) * rotationAngle;
-
-            // Set the rotation around the Y-axis (horizontal)
-            transform.rotation = initialRotation * Quaternion.Euler(0f, currentRotation, 0f); // Use initial rotation
-
-            idleTimer += Time.deltaTime;
-
-            if (enemyLOS.IsPlayerSeen())
-            {
+                StartCoroutine(ReturnToPatrol());
                 yield break;
             }
+            else
+            {
+                // Add attack behavior here
+                Debug.Log("Attacking player!");
+            }
 
             yield return null;
         }
+    }
+
+    IEnumerator ReturnToPatrol()
+    {
+        while (Vector3.Distance(transform.position, waypoints[currentWaypointIndex].position) > agent.stoppingDistance)
+        {
+            agent.SetDestination(waypoints[currentWaypointIndex].position);
+            yield return null;
+        }
+
+        StartCoroutine(Patrol());
     }
 
     void OnCollisionEnter(Collision collision)
